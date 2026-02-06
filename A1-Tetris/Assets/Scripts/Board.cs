@@ -6,19 +6,72 @@ using UnityEngine.VFX;
 
 public class Board : MonoBehaviour
 {
-    public TetrisManager tetrisManager;
-    
-    public TetronimoData[] tetronimos;
+    public TetronimoData[] tetronimos; 
 
+    public TetrisManager tetrisManager;
+   
     // Active piece initially contains a reference to the "Piece" prefab.
     public Piece piecePrefab;
-    public Piece activePiece;
+    Piece activePiece;
 
-    public Vector2Int startPosition;
     public Tilemap tilemap;
     public Vector2Int boardSize;
-
+    public Vector2Int startPosition;
     
+    // Maps tilemap position to a Piece gameObject
+    Dictionary<Vector3Int, Piece> pieces = new Dictionary<Vector3Int, Piece> ();
+
+    private void Start()
+    {
+        SpawnPiece();
+    }
+
+    public void SpawnPiece() 
+    {
+        activePiece = Instantiate(piecePrefab);
+        
+        // Spawns a random tetronimo at the start of every turn
+        Tetronimo t = (Tetronimo)Random.Range(0, tetronimos.Length);
+
+        activePiece.Initialize(this, t);
+        Set(activePiece);
+    }
+
+    void SetTile(Vector3Int cellPosition, Piece piece)
+    {
+        if (piece == null)
+        {
+            tilemap.SetTile(cellPosition, null);
+
+            pieces.Remove(cellPosition);
+        }
+        else
+        {
+            tilemap.SetTile(cellPosition, piece.data.tile);
+
+            // This line is creating an association between the cell position and the piece gameObject.
+            pieces[cellPosition] = piece;
+        }
+    }
+
+    // Sets the tile color for this tetronimo piece.
+    public void Set(Piece piece)
+    {
+        for (int i = 0; i < piece.cells.Length; i++)
+        {
+            Vector3Int cellPosition = (Vector3Int)(piece.cells[i] + piece.position);
+            SetTile(cellPosition, piece);
+        }
+    }
+
+    public void Clear(Piece piece)
+    {
+        for (int i = 0; i < piece.cells.Length; i++)
+        {
+            Vector3Int cellPosition = (Vector3Int)(piece.cells[i] + piece.position);
+            SetTile(cellPosition, null);
+        }
+    }
 
     int left
     {
@@ -35,39 +88,6 @@ public class Board : MonoBehaviour
     int bottom
     {
         get { return -boardSize.y / 2; }
-    }
-
-    private void Start()
-    {
-        SpawnPiece();
-    }
-
-    public void SpawnPiece() 
-    {
-        activePiece = Instantiate(piecePrefab);
-        
-        Tetronimo t = (Tetronimo)Random.Range(0, tetronimos.Length);
-        activePiece.Initialize(this, Tetronimo.T);
-        Set(activePiece);
-    }
-
-    // Sets the tile color for this tetronimo piece.
-    public void Set(Piece piece)
-    {
-        for (int i = 0; i < piece.cells.Length; i++)
-        {
-            Vector3Int cellPosition = (Vector3Int)(piece.cells[i] + piece.position);
-            tilemap.SetTile(cellPosition, piece.data.tile);
-        }
-    }
-
-    public void Clear(Piece piece)
-    {
-        for (int i = 0; i < piece.cells.Length; i++)
-        {
-            Vector3Int cellPosition = (Vector3Int)(piece.cells[i] + piece.position);
-            tilemap.SetTile(cellPosition, null);
-        }
     }
 
     public bool IsPositionValid(Piece piece, Vector2Int position)
@@ -90,7 +110,8 @@ public class Board : MonoBehaviour
     public void CheckBoard()
     {
         List<int> destroyedLines = new List<int>();
-        
+
+        // Scan from bottom to top 
         for (int y = bottom; y < top; y++)
         {
             if (IsLineFull(y))
@@ -100,37 +121,42 @@ public class Board : MonoBehaviour
             }
         }
 
-        // Debug.Log($"Lines Destroyed:");
-
         int rowsShiftedDown = 0; 
 
-        // We shift down here.
-        foreach (int clearedRow in destroyedLines)
+        // We shift down here. 
+        foreach (int y in destroyedLines)
         {
-            ShiftRowsDown(clearedRow);
+            ShiftRowsDown(y - rowsShiftedDown);
+
+            // At the end of every loop, we have shifted rows down by one more.
             rowsShiftedDown++;
         }
 
+        // Finally ready to set the score! 
+        int score = tetrisManager.CalculateScore(destroyedLines.Count);
+        tetrisManager.ChangeScore(score);
     }
 
     void ShiftRowsDown(int clearedRow)
     {
-        // top - 1 is correct - we will see this once we get to end conditions.
-        for (int y = clearedRow; y < top; y++)
+        for (int y = clearedRow + 1; y < top - 1; y++)
         {
             for (int x = left; x < right; x ++)
             {
                 Vector3Int cellPosition = new Vector3Int(x, y);
 
-                // Store the tile temporarily.
-                TileBase currentTile = tilemap.GetTile(cellPosition);
+                if (pieces.ContainsKey(cellPosition))
+                {
+                    // Store the piece temporarily.
+                    Piece currentPiece = pieces[cellPosition];
 
-                // Clear the position it's in.
-                tilemap.SetTile(cellPosition, null);
+                    // Clear the position it's in.
+                    SetTile(cellPosition, null);
 
-                // Move the tile down.
-                cellPosition.y -= 1;
-                tilemap.SetTile(cellPosition, currentTile);
+                    // Move the tile down.
+                    cellPosition.y -= 1;
+                    SetTile(cellPosition, currentPiece);
+                }
             }
         }
     }
@@ -139,7 +165,7 @@ public class Board : MonoBehaviour
     {
         for (int x = left; x < right; x++)
         {
-            Vector3Int cellPosition = new Vector3Int (x, y);
+            Vector3Int cellPosition = new Vector3Int (x, y, 0);
 
             if (!tilemap.HasTile(cellPosition)) return false;
         }
@@ -150,13 +176,12 @@ public class Board : MonoBehaviour
     {
         for (int x = left; x < right; x++)
         {
-            Vector3Int cellPosition = new Vector3Int(x, y);
+            Vector3Int cellPosition = new Vector3Int(x, y, 0);
 
-            // MISSED SOMETHING HERE
+            // Do something here to clean up gameObjects
+
+
+            SetTile(cellPosition, null);
         }
     }
-
-
-    // Finally ready to set the score! not working atm!
-    // int score = TetrisManager.CalculateScore(destroyedLines.Count);
 }

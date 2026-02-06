@@ -5,13 +5,14 @@ using UnityEngine;
 public class Piece : MonoBehaviour
 {
     public TetronimoData data;
+    public Board board;
     public Vector2Int[] cells;
     public Vector2Int position;
-    public Board board;
-
+    
     bool freeze = false;
 
-    bool isSpecial;
+    //Remove later
+    //bool isSpecial;
 
     public void Initialize(Board board, Tetronimo tetronimo)
     {
@@ -30,7 +31,7 @@ public class Piece : MonoBehaviour
 
         // Create a copy of the Tetronimo local cell coordinates.
         cells = new Vector2Int[data.cells.Length];
-        for (int i = 0; i < cells.Length; i++) cells[i] = data.cells[i];
+        for (int i = 0; i < data.cells.Length; i++) cells[i] = data.cells[i];
 
         // Set the start position.
         position = board.startPosition;
@@ -38,6 +39,7 @@ public class Piece : MonoBehaviour
 
     private void Update()
     {
+        // If the piece is frozen, do NOT process the update loop
         if (freeze) return;
 
         board.Clear(this);
@@ -48,9 +50,10 @@ public class Piece : MonoBehaviour
         }
         else
         {
+            // If we hard drop, do NOT process any other piece motion.
             if (Input.GetKeyDown(KeyCode.A))
             {
-                Move(Vector2Int.left);
+                Move(Vector2Int.left); 
             }
             else if (Input.GetKeyDown(KeyCode.D))
             {
@@ -61,25 +64,31 @@ public class Piece : MonoBehaviour
             {
                 Move(Vector2Int.down);
             }
+
+            // Just for debugging
             // else if (Input.GetKeyDown(KeyCode.W))
             //{
             //    Move(Vector2Int.up);
             //}
 
-            // Rotation
+            // Rotation Inputs
             if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
-                Rotate(-1);
+                Rotate(1); //Clockwise
             }
             else if (Input.GetKeyDown(KeyCode.RightArrow))
             {
-                Rotate(1);
+                Rotate(-1); //Counter-Clockwise
             }
         }
 
-
-
         board.Set(this);
+
+        // DEBUG ONLY - "P" is the debug key.
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            board.CheckBoard();
+        }
 
         // We only check the board and spawn the new piece AFTER the final piece has been frozen.
         if (freeze)
@@ -91,19 +100,76 @@ public class Piece : MonoBehaviour
 
     void Rotate(int direction)
     {
+        // Store the cell locations so that we can revert it.
+        Vector2Int[] temporaryCells = new Vector2Int[cells.Length];
+        for (int i = 0; i < cells.Length; i++) temporaryCells[i] = cells[i];
+        
+        // Performs normal rotation
+        ApplyRotation(direction);
+
+        // Checks if rotation is valid
+        if (!board.IsPositionValid(this, position))
+        {
+            if (!TryWallKicks())
+            {
+                RevertRotation(temporaryCells);
+            }
+            else
+            {
+                Debug.Log("Wall kick success");
+            }
+        }
+        else
+        {
+            Debug.Log("Valid rotation");
+        }
+    }
+
+    bool TryWallKicks()
+    {
+        Vector2Int[] wallKickOffsets = new Vector2Int[]
+        {
+            Vector2Int.left,
+            Vector2Int.right,
+            Vector2Int.down,
+            new Vector2Int(-1, -1), // Diagonally down-left
+            new Vector2Int(1, -1), // Diagonally down-right
+        };
+
+        foreach (Vector2Int offset in wallKickOffsets)
+        {
+            if (Move(offset)) return true;
+        }
+
+        return false;
+    }
+
+    void RevertRotation(Vector2Int[] temporaryCells)
+    {
+        for (int i = 0; i < cells.Length; i++) cells[i] = temporaryCells[i];
+    }
+
+    void ApplyRotation(int direction)
+    {
         Quaternion rotation = Quaternion.Euler(0, 0, 90.0f * direction);
-       
+
+        bool isSpecial = data.tetronimo == Tetronimo.I || data.tetronimo == Tetronimo.O || data.tetronimo == Tetronimo.E;
+
         for (int i = 0; i < cells.Length; i++)
         {
-            // This is JUST the local cell position.
-            Vector2Int cellPosition = cells[i];
+            // Convert cell location to a Vector3 to work with Quaternions
+            Vector3 cellPosition = new Vector3(cells[i].x, cells[i].y);
 
-            // Cast this to a Vector3 because that's how Quaternions work.
-            Vector3 cellPositionV3 = new Vector3(cellPosition.x, cellPosition.y);
+            if (isSpecial)
+            {
+                cellPosition.x -= 0.5f;
+                cellPosition.y -= 0.5f;
+            }
 
             // Get the result
-            Vector3 result = rotation * cellPositionV3;
+            Vector3 result = rotation * cellPosition;
 
+            // Put it back in the cells data
             if (isSpecial)
             {
                 cells[i].x = Mathf.CeilToInt(result.x);
@@ -113,7 +179,7 @@ public class Piece : MonoBehaviour
             {
                 cells[i].x = Mathf.RoundToInt(result.x);
                 cells[i].y = Mathf.RoundToInt(result.y);
-            } 
+            }
         }
     }
 
@@ -126,11 +192,10 @@ public class Piece : MonoBehaviour
         }
 
         freeze = true;
-
-        //  MISSED SOMETHING HERE
     }
 
-    // Move will return whether or not the translation is valid. 
+    // Move will return whether or not the translation is valid.
+    // Will ONLY actually move the tetronimo if the position is valid.
     bool Move(Vector2Int translation)
     {
         Vector2Int newPosition = position;

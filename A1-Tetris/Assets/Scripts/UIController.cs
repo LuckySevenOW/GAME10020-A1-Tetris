@@ -8,7 +8,7 @@ public class UIController : MonoBehaviour
     public TetrisManager tetrisManager;
     public TextMeshProUGUI scoreText;
 
-    public void UpdateScore()
+    public void UIUpdateScore()
     {
         scoreText.text = $"SCORE: {tetrisManager.score}";
     }    
