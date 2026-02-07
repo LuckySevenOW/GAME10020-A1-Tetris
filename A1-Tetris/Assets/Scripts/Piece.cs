@@ -9,10 +9,9 @@ public class Piece : MonoBehaviour
     public Vector2Int[] cells;
     public Vector2Int position;
     
-    bool freeze = false;
+    public bool freeze = false;
 
-    //Remove later
-    //bool isSpecial;
+    int activeCellCount = -1;
 
     public void Initialize(Board board, Tetronimo tetronimo)
     {
@@ -35,10 +34,14 @@ public class Piece : MonoBehaviour
 
         // Set the start position.
         position = board.startPosition;
+
+        activeCellCount = cells.Length;
     }
 
     private void Update()
     {
+        if (board.tetrisManager.gameOver) return;
+
         // If the piece is frozen, do NOT process the update loop
         if (freeze) return;
 
@@ -196,7 +199,7 @@ public class Piece : MonoBehaviour
 
     // Move will return whether or not the translation is valid.
     // Will ONLY actually move the tetronimo if the position is valid.
-    bool Move(Vector2Int translation)
+    public bool Move(Vector2Int translation)
     {
         Vector2Int newPosition = position;
         newPosition += translation;
@@ -206,5 +209,18 @@ public class Piece : MonoBehaviour
         if (isValid) position = newPosition;
 
         return isValid;
+    }
+
+    public void ReduceActiveCount()
+    {
+        activeCellCount -= 1;
+        Debug.Log($"Tetronimo {data.tetronimo} active cell count = {activeCellCount}");
+
+        if (activeCellCount <= 0)
+        {
+            Debug.Log($"Tetronimo {data.tetronimo} destroyed");
+            
+            Destroy(gameObject);
+        }
     }
 }

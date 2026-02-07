@@ -17,13 +17,37 @@ public class Board : MonoBehaviour
     public Tilemap tilemap;
     public Vector2Int boardSize;
     public Vector2Int startPosition;
+
+    public float dropInterval = 0.5f;
+
+    float dropTime = 0.0f;
     
     // Maps tilemap position to a Piece gameObject
     Dictionary<Vector3Int, Piece> pieces = new Dictionary<Vector3Int, Piece> ();
 
-    private void Start()
+    private void Update()
     {
-        SpawnPiece();
+        if (tetrisManager.gameOver) return;
+        
+        dropTime += Time.deltaTime;
+
+        if (dropTime > dropInterval )
+        {
+            dropTime = 0.0f;
+
+            Clear(activePiece);
+            bool moveResult = activePiece.Move(Vector2Int.down);
+            Set(activePiece);
+
+            // If the move fails, that means the piece is stuck, so that ends the placement.
+            if (!moveResult)
+            {
+                activePiece.freeze = true;
+
+                CheckBoard();
+                SpawnPiece();
+            }
+        }
     }
 
     public void SpawnPiece() 
@@ -34,7 +58,44 @@ public class Board : MonoBehaviour
         Tetronimo t = (Tetronimo)Random.Range(0, tetronimos.Length);
 
         activePiece.Initialize(this, t);
+
+        CheckEndGame();
+
         Set(activePiece);
+    }
+
+    void CheckEndGame()
+    {
+        if (!IsPositionValid(activePiece, activePiece.position))
+        {
+            // If there is not a valid position for the newly placed piece, game over!
+            tetrisManager.SetGameOver(true);
+        }
+    }
+
+    public void UpdateGameOver()
+    {
+        // gameOver being false means we either started a new game, or reset the game.
+        if (!tetrisManager.gameOver)
+        {
+            ResetBoard();
+        }
+    }    
+
+    void ResetBoard()
+    {
+        // Looks for found pieces inside game object, then clears the gameObjects.
+        Piece[] foundPieces = FindObjectsByType<Piece>(FindObjectsSortMode.None); 
+        foreach (Piece piece in foundPieces) Destroy(piece.gameObject);
+
+        activePiece = null;
+
+        tilemap.ClearAllTiles();
+
+        // If you have the Pieces dictionary (optimization step)
+        pieces.Clear();
+
+        SpawnPiece();
     }
 
     void SetTile(Vector3Int cellPosition, Piece piece)
@@ -178,10 +239,15 @@ public class Board : MonoBehaviour
         {
             Vector3Int cellPosition = new Vector3Int(x, y, 0);
 
-            // Do something here to clean up gameObjects
+            // Clean up gameObjects
+            if (pieces.ContainsKey(cellPosition))
+            {
+                Piece piece = pieces[cellPosition];
 
+                piece.ReduceActiveCount();
 
-            SetTile(cellPosition, null);
+                SetTile(cellPosition, null);
+            }
         }
     }
 }

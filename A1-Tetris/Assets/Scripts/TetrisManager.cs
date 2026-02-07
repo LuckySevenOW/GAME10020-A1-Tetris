@@ -8,12 +8,14 @@ public class TetrisManager : MonoBehaviour
     // Why is this public? Other pieces of game code may need to access it. 
     public int score { get; private set; }
 
+    public bool gameOver { get; private set; }
+
     public UnityEvent OnScoreChanged;
+    public UnityEvent OnGameOver;
 
     private void Start()
     {
-        score = 0;
-        ChangeScore(0);
+        SetGameOver(false);
     }
 
     public int CalculateScore(int linesCleared)
@@ -30,9 +32,22 @@ public class TetrisManager : MonoBehaviour
 
     public void ChangeScore(int amount)
     {
-        // Future consideration: Should amount be negative?
         score += amount;
-
         OnScoreChanged.Invoke();
     }
+
+    public void SetGameOver(bool _gameOver)
+    {
+       if (!_gameOver)
+       {
+            // When the gameOver event is FALSE, reset the score.
+            score = 0;
+            ChangeScore(0);
+       }
+        
+        gameOver = _gameOver;
+
+        OnGameOver.Invoke();
+    }
+
 }
