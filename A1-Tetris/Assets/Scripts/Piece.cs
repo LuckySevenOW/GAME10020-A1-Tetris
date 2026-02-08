@@ -68,12 +68,6 @@ public class Piece : MonoBehaviour
                 Move(Vector2Int.down);
             }
 
-            // Just for debugging
-            // else if (Input.GetKeyDown(KeyCode.W))
-            //{
-            //    Move(Vector2Int.up);
-            //}
-
             // Rotation Inputs
             if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
@@ -86,12 +80,6 @@ public class Piece : MonoBehaviour
         }
 
         board.Set(this);
-
-        // DEBUG ONLY - "P" is the debug key.
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            board.CheckBoard();
-        }
 
         // We only check the board and spawn the new piece AFTER the final piece has been frozen.
         if (freeze)
@@ -119,12 +107,12 @@ public class Piece : MonoBehaviour
             }
             else
             {
-                Debug.Log("Wall kick success");
+                // do nothing (was debug here)
             }
         }
         else
         {
-            Debug.Log("Valid rotation");
+            // do nothing (was debug here)
         }
     }
 
@@ -214,12 +202,9 @@ public class Piece : MonoBehaviour
     public void ReduceActiveCount()
     {
         activeCellCount -= 1;
-        Debug.Log($"Tetronimo {data.tetronimo} active cell count = {activeCellCount}");
 
         if (activeCellCount <= 0)
         {
-            Debug.Log($"Tetronimo {data.tetronimo} destroyed");
-            
             Destroy(gameObject);
         }
     }

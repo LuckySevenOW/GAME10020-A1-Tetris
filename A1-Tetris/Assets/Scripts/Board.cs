@@ -9,7 +9,7 @@ public class Board : MonoBehaviour
     public TetronimoData[] tetronimos; 
 
     public TetrisManager tetrisManager;
-   
+
     // Active piece initially contains a reference to the "Piece" prefab.
     public Piece piecePrefab;
     Piece activePiece;
@@ -28,6 +28,8 @@ public class Board : MonoBehaviour
     private void Update()
     {
         if (tetrisManager.gameOver) return;
+
+        tetrisManager.GameTimer();
         
         dropTime += Time.deltaTime;
 
@@ -48,6 +50,8 @@ public class Board : MonoBehaviour
                 SpawnPiece();
             }
         }
+
+        tetrisManager.UIUpdateTimer();
     }
 
     public void SpawnPiece() 
@@ -94,6 +98,9 @@ public class Board : MonoBehaviour
 
         // If you have the Pieces dictionary (optimization step)
         pieces.Clear();
+
+        // Sets the amount of time the player starts with
+        tetrisManager.currentTime = 120.0f;
 
         SpawnPiece();
     }

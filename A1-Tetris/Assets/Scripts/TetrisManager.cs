@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using TMPro;
 
 public class TetrisManager : MonoBehaviour
 {
@@ -12,6 +13,9 @@ public class TetrisManager : MonoBehaviour
 
     public UnityEvent OnScoreChanged;
     public UnityEvent OnGameOver;
+
+    public float currentTime;
+    public TextMeshProUGUI timerText;
 
     private void Start()
     {
@@ -48,6 +52,24 @@ public class TetrisManager : MonoBehaviour
         gameOver = _gameOver;
 
         OnGameOver.Invoke();
+    }
+
+    // Updates the text on the timer to show how much time is left.
+    public void UIUpdateTimer()
+    {
+        timerText.text = $"{currentTime:n0}";
+    }
+
+    public void GameTimer()
+    {
+        // Ticks down the current time
+        currentTime -= Time.deltaTime; 
+            
+        // If the current time remaining hits 0, game over!
+        if (currentTime <= 0)
+        {
+            SetGameOver(true);
+        }
     }
 
 }
