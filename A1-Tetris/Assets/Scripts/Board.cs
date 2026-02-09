@@ -51,6 +51,7 @@ public class Board : MonoBehaviour
             }
         }
 
+        // Updates the timer each frame.
         tetrisManager.UIUpdateTimer();
     }
 
@@ -99,8 +100,11 @@ public class Board : MonoBehaviour
         // If you have the Pieces dictionary (optimization step)
         pieces.Clear();
 
-        // Sets the amount of time the player starts with
+        // Sets the amount of time the player starts with (2 minutes)
         tetrisManager.currentTime = 120.0f;
+
+        // Plays the music from the start each time the board resets (or each time you start fresh). 
+        tetrisManager.PlayMusic();
 
         SpawnPiece();
     }
@@ -141,6 +145,7 @@ public class Board : MonoBehaviour
         }
     }
 
+    // Board boundaries
     int left
     {
         get { return -boardSize.x / 2; }

@@ -14,8 +14,12 @@ public class TetrisManager : MonoBehaviour
     public UnityEvent OnScoreChanged;
     public UnityEvent OnGameOver;
 
+    // Timer-related variables
     public float currentTime;
     public TextMeshProUGUI timerText;
+
+    // Audio-related variables
+    public AudioSource audioSource;
 
     private void Start()
     {
@@ -31,7 +35,7 @@ public class TetrisManager : MonoBehaviour
             case 3: return 500;
             case 4: return 800;
             default: return 0;
-        }    
+        }
     }
 
     public void ChangeScore(int amount)
@@ -42,16 +46,28 @@ public class TetrisManager : MonoBehaviour
 
     public void SetGameOver(bool _gameOver)
     {
-       if (!_gameOver)
-       {
+        if (!_gameOver)
+        {
             // When the gameOver event is FALSE, reset the score.
             score = 0;
             ChangeScore(0);
-       }
-        
+        }
+
         gameOver = _gameOver;
 
         OnGameOver.Invoke();
+    }
+
+    // When called, plays the audio source (the tetris theme remix). 
+    public void PlayMusic()
+    {
+        audioSource.Play();
+    }
+
+    // When called, stops the audio source.
+    public void StopMusic()
+    {
+        audioSource.Stop();
     }
 
     // Updates the text on the timer to show how much time is left.
@@ -60,6 +76,7 @@ public class TetrisManager : MonoBehaviour
         timerText.text = $"{currentTime:n0}";
     }
 
+    // Tracks the game timer and ends the game when the time runs out.
     public void GameTimer()
     {
         // Ticks down the current time
